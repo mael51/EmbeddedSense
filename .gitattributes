@@ -1,0 +1,20 @@
+# Auto-detect text files and normalize line endings to LF
+* text=auto
+
+# Source code
+*.cpp text
+*.hpp text
+*.h text
+*.c text
+*.cmake text
+*.md text
+
+# Build scripts
+*.sh text eol=lf
+*.ps1 text eol=crlf
+
+# Binary files
+*.elf binary
+*.bin binary
+*.o binary
+*.a binary

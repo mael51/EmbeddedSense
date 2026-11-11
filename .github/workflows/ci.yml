@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  build-pc:
+    name: Build & Test (PC)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ ninja-build
+
+      - name: Configure (Ubuntu)
+        if: runner.os == 'Linux'
+        run: cmake -G "Ninja" -S . -B build
+
+      - name: Setup MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        run: cmake -G "Ninja" -S . -B build
+        shell: msys2 {0}
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: cmake --build build
+        shell: msys2 {0}
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        run: ./build/embeddedsense_tests.exe
+        shell: msys2 {0}
+
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: cmake --build build
+
+      - name: Run tests (Linux)
+        if: runner.os == 'Linux'
+        run: ./build/embeddedsense_tests
+
+  cross-compile-stm32:
+    name: Cross-compile (STM32)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ARM toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi cmake ninja-build
+
+      - name: Configure
+        run: |
+          cmake -G "Ninja" \
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/platform/stm32/toolchain-arm.cmake" \
+            -DCROSS_COMPILE=ON \
+            -S . -B build_stm32
+
+      - name: Build
+        run: cmake --build build_stm32
+
+      - name: Verify output
+        run: ls -la build_stm32/embeddedsense_firmware.elf build_stm32/embeddedsense_firmware.bin && arm-none-eabi-size build_stm32/embeddedsense_firmware.elf

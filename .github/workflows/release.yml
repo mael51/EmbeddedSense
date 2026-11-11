@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ARM toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi cmake ninja-build
+
+      - name: Cross-compile STM32
+        run: |
+          cmake -G "Ninja" \
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/platform/stm32/toolchain-arm.cmake" \
+            -DCROSS_COMPILE=ON \
+            -S . -B build_stm32
+          cmake --build build_stm32
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build_stm32/embeddedsense_firmware.elf
+            build_stm32/embeddedsense_firmware.bin
+          generate_release_notes: true
