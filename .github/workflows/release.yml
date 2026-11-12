@@ -13,15 +13,24 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install ARM toolchain
-        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi cmake ninja-build
-
-      - name: Cross-compile STM32
         run: |
-          cmake -G "Ninja" \
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi cmake make
+
+      - name: Configure
+        run: |
+          cmake -S . -B build_stm32 \
             -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/platform/stm32/toolchain-arm.cmake" \
             -DCROSS_COMPILE=ON \
-            -S . -B build_stm32
-          cmake --build build_stm32
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build_stm32 --parallel
+
+      - name: Verify output
+        run: |
+          ls -la build_stm32/embeddedsense_firmware.elf build_stm32/embeddedsense_firmware.bin
+          arm-none-eabi-size build_stm32/embeddedsense_firmware.elf
 
       - name: Create release
         uses: softprops/action-gh-release@v2
