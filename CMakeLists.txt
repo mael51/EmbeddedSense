@@ -9,7 +9,11 @@ if(CROSS_COMPILE)
     include("${CMAKE_CURRENT_SOURCE_DIR}/platform/stm32/toolchain-arm.cmake")
 endif()
 
-project(EmbeddedSense C CXX ASM)
+if(CROSS_COMPILE)
+    project(EmbeddedSense C CXX ASM)
+else()
+    project(EmbeddedSense C CXX)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
